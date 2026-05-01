@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🧋 附近飲料店</title>
+<title>🧋 Drink Everywhere</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -172,7 +172,7 @@ select.oi{background:var(--surface2);border-radius:5px;padding:2px;cursor:pointe
   <div id="map-loading"><div class="spinner"></div><p style="color:var(--text2);font-size:13px">載入地圖中…</p></div>
   <div id="map"></div>
   <div id="m-header">
-    <span id="m-logo">🧋 附近飲料店</span>
+    <span id="m-logo">🧋 Drink Everywhere</span>
     <div id="m-search-row">
       <input id="m-si" type="text" class="m-search-input" placeholder="輸入地址搜尋…" style="flex:1;background:rgba(26,29,39,.95);border:1px solid var(--border);border-radius:11px;padding:9px 13px;color:var(--text);font-size:14px;font-family:'Noto Sans TC',sans-serif;outline:none;">
       <button class="m-btn m-btn-s" id="m-sb">🔍</button>
@@ -204,7 +204,7 @@ select.oi{background:var(--surface2);border-radius:5px;padding:2px;cursor:pointe
 <!-- DESKTOP -->
 <div id="desktop-app">
   <div id="d-header">
-    <span id="d-logo">🧋 附近飲料店</span>
+    <span id="d-logo">🧋 Drink Everywhere</span>
     <div id="d-search-group">
       <input id="d-si" type="text" placeholder="輸入地址或地點搜尋…">
       <button class="d-btn d-btn-s" id="d-sb">🔍 搜尋</button>
@@ -368,8 +368,8 @@ function fitToRadius(ll,r){
   setTimeout(()=>m.setCenter(ll),80);
 }
 
-/* ── SEARCH (Places API New) ── */
-async function searchFrom(center){
+/* ── SEARCH (Places API - nearbySearch) ── */
+function searchFrom(center){
   const ll = toLL(center);
   searchCenter = ll;
   const r = gRad()*1000;
@@ -384,69 +384,40 @@ async function searchFrom(center){
   document.getElementById('list-label').textContent='🔍 搜尋中…';
   document.getElementById('d-cnt').textContent='…';
 
-  try {
-    const { Place } = await google.maps.importLibrary("places");
+  const svc = gSvc();
+  const kwds = ['手搖飲料', '珍珠奶茶', 'bubble tea', '飲料店', '茶飲'];
+  let done = 0;
+  let anyDenied = false;
 
-    // searchNearby 不能用 textQuery，改用 includedTypes + keyword 組合
-    const searchConfigs = [
-      { includedTypes: ['bubble_tea_shop'] },
-      { includedTypes: ['cafe'] },
-      { includedTypes: ['restaurant'], keyword: '手搖飲料' },
-      { includedTypes: ['restaurant'], keyword: '珍珠奶茶' },
-    ];
+  kwds.forEach(kw => {
+    svc.nearbySearch(
+      { location: ll, radius: r, keyword: kw },
+      (results, status) => {
+        const S = google.maps.places.PlacesServiceStatus;
+        console.log('[nearbySearch]', kw, status, results?.length ?? 0);
 
-    const seen = new Set();
-
-    for (const cfg of searchConfigs) {
-      try {
-        const req = {
-          fields: ['id','displayName','location','formattedAddress','rating',
-                   'userRatingCount','regularOpeningHours','businessStatus'],
-          locationRestriction: { circle: { center: ll, radius: r } },
-          maxResultCount: 20,
-        };
-        if (cfg.includedTypes) req.includedTypes = cfg.includedTypes;
-
-        const { places } = await Place.searchNearby(req);
-        console.log('[searchNearby]', JSON.stringify(cfg), places?.length ?? 0);
-
-        if (places) {
-          places.forEach(p => {
-            const name = p.displayName || '';
-            // Filter: only keep drink-related places
-            const drinkKw = ['茶','奶','飲','juice','tea','珍珠','手搖','冰','果汁','bubble','咖啡'];
-            const isDrink = drinkKw.some(k => name.toLowerCase().includes(k));
-            if (isDrink && !seen.has(p.id)) {
-              seen.add(p.id);
-              const legacy = {
-                place_id: p.id,
-                name: name,
-                vicinity: p.formattedAddress || '',
-                geometry: { location: p.location },
-                rating: p.rating,
-                user_ratings_total: p.userRatingCount,
-                opening_hours: p.regularOpeningHours
-                  ? { isOpen: () => { try { return p.regularOpeningHours.isOpen(); } catch(e){ return null; } } }
-                  : null,
-              };
-              stores.push(legacy);
-              addMkr(legacy);
+        if (status === S.OK && results) {
+          results.forEach(p => {
+            if (!stores.find(s => s.place_id === p.place_id)) {
+              stores.push(p);
+              addMkr(p);
             }
           });
+        } else if (status === S.REQUEST_DENIED) {
+          anyDenied = true;
         }
-      } catch(e) { console.warn('[searchNearby config error]', cfg, e.message); }
-    }
 
-    console.log('[Total stores found]', stores.length);
-
-  } catch(e) {
-    console.error('[Places importLibrary error]', e);
-    showErr('⛔ Places API 載入失敗：' + e.message);
-  }
-
-  sortStores(ll);
-  renderList();
-  renderBubbles();
+        if (++done >= kwds.length) {
+          if (anyDenied) {
+            showErr('⛔ API Key 被拒絕\n請至 Google Cloud Console 確認 Places API 已啟用，並檢查 API Key 的 HTTP 參照網址限制是否包含此網站網址');
+          }
+          sortStores(ll);
+          renderList();
+          renderBubbles();
+        }
+      }
+    );
+  });
 }
 
 /* ── MARKERS ── */
