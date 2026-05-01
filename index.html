@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🧋 附近飲料店</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;
+  --accent:#f7c948;--accent2:#ff7b54;--accent3:#7ee8a2;
+  --text:#f0f0f0;--text2:#9a9db0;--border:rgba(255,255,255,0.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;}
+
+/* ═══ MOBILE ═══ */
+#mobile-app{display:none;position:relative;width:100vw;height:100vh;height:100dvh;overflow:hidden;}
+#map{position:absolute;inset:0;width:100%;height:100%;}
+
+#m-header{
+  position:absolute;top:0;left:0;right:0;z-index:50;
+  padding:12px 12px 10px;
+  background:linear-gradient(to bottom,rgba(15,17,23,0.97) 75%,transparent);
+  pointer-events:none;
+}
+#m-header>*{pointer-events:all;}
+#m-logo{font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:var(--accent);display:block;margin-bottom:8px;}
+#m-search-row{display:flex;gap:7px;margin-bottom:7px;}
+#m-search-input{
+  flex:1;background:rgba(26,29,39,0.95);border:1px solid var(--border);
+  border-radius:11px;padding:9px 13px;color:var(--text);font-size:14px;
+  font-family:'Noto Sans TC',sans-serif;outline:none;
+}
+#m-search-input::placeholder{color:var(--text2);}
+.m-btn{width:40px;height:40px;border-radius:11px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;transition:transform .15s;}
+.m-btn:active{transform:scale(.88);}
+.m-btn-s{background:rgba(247,201,72,.92);color:#000;}
+.m-btn-l{background:rgba(255,123,84,.92);color:#fff;}
+#m-radius-row{display:flex;align-items:center;gap:9px;background:rgba(26,29,39,.9);border-radius:10px;padding:7px 12px;border:1px solid var(--border);}
+#m-radius-row label{font-size:11px;color:var(--text2);white-space:nowrap;}
+#m-radius-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:4px;background:var(--surface2);outline:none;}
+#m-radius-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);}
+#m-radius-val{font-size:12px;font-weight:700;color:var(--accent);min-width:38px;text-align:right;}
+
+/* bubble panel */
+#bubble-panel{position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:40;transition:transform .3s ease;}
+#bubble-panel.hidden{transform:translateY(-50%) translateX(148px);}
+#bubble-tab{position:absolute;left:-26px;top:50%;transform:translateY(-50%);width:26px;height:54px;background:rgba(26,29,39,.9);border-radius:10px 0 0 10px;border:1px solid var(--border);border-right:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:var(--accent);}
+#bubble-box{width:148px;background:rgba(26,29,39,.9);border:1px solid var(--border);border-radius:14px 0 0 14px;padding:10px 8px;}
+#bubble-title{font-size:10px;color:var(--text2);font-weight:700;text-align:center;margin-bottom:7px;letter-spacing:1px;text-transform:uppercase;}
+#m-bsvg{width:132px;height:220px;display:block;}
+
+/* list panel */
+#list-panel{position:absolute;bottom:0;left:0;right:0;z-index:40;transition:transform .32s cubic-bezier(.4,0,.2,1);}
+#list-panel.hidden{transform:translateY(calc(100% - 50px));}
+#list-handle{background:rgba(22,25,38,.95);border:1px solid var(--border);border-bottom:none;border-radius:18px 18px 0 0;padding:11px 16px 8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;height:50px;}
+#list-knob{width:36px;height:4px;border-radius:4px;background:rgba(255,255,255,.2);}
+#list-label{font-size:13px;font-weight:700;color:var(--accent);}
+#list-chevron{font-size:11px;color:var(--text2);transition:transform .3s;}
+#list-panel:not(.hidden) #list-chevron{transform:rotate(180deg);}
+#list-scroll{background:rgba(22,25,38,.97);border:1px solid var(--border);border-top:none;overflow-y:auto;max-height:55vh;}
+
+/* ═══ DESKTOP ═══ */
+#desktop-app{display:none;flex-direction:column;height:100vh;overflow:hidden;}
+#d-header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:14px;flex-shrink:0;flex-wrap:wrap;}
+#d-logo{font-family:'Outfit',sans-serif;font-size:21px;font-weight:800;color:var(--accent);white-space:nowrap;}
+#d-search-group{display:flex;gap:7px;flex:1;min-width:260px;}
+#d-search-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 14px;color:var(--text);font-size:14px;font-family:'Noto Sans TC',sans-serif;outline:none;transition:border-color .2s;}
+#d-search-input:focus{border-color:var(--accent);}
+#d-search-input::placeholder{color:var(--text2);}
+.d-btn{padding:9px 14px;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Noto Sans TC',sans-serif;white-space:nowrap;transition:transform .15s;}
+.d-btn:active{transform:scale(.95);}
+.d-btn-s{background:var(--accent);color:#000;}
+.d-btn-l{background:var(--accent2);color:#fff;}
+#d-rg{display:flex;align-items:center;gap:8px;margin-left:auto;}
+#d-rg label{font-size:12px;color:var(--text2);white-space:nowrap;}
+#d-radius-slider{width:110px;-webkit-appearance:none;appearance:none;height:4px;border-radius:4px;background:var(--surface2);outline:none;}
+#d-radius-slider::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);}
+#d-rv{font-size:12px;font-weight:700;color:var(--accent);min-width:40px;}
+#d-body{display:flex;flex:1;overflow:hidden;}
+#d-map-wrap{flex:1;position:relative;}
+#d-map{width:100%;height:100%;}
+#d-sidebar{width:340px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+#d-tabs{display:flex;border-bottom:1px solid var(--border);}
+.d-tab{flex:1;padding:11px 6px;text-align:center;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:3px solid transparent;transition:color .2s,border-color .2s;}
+.d-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.d-panel{flex:1;overflow-y:auto;display:none;}
+.d-panel.active{display:block;}
+#d-list-info{padding:9px 16px;font-size:12px;color:var(--text2);border-bottom:1px solid var(--border);}
+#d-list-info strong{color:var(--accent);}
+#d-bwrap{padding:14px;}
+#d-bwrap h3{font-size:14px;font-weight:700;margin-bottom:3px;}
+#d-bwrap p{font-size:11px;color:var(--text2);margin-bottom:10px;}
+#d-bsvg{width:100%;display:block;}
+
+/* shared store items */
+.si{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.si:active,.si:hover{background:var(--surface2);}
+.sico{width:42px;height:42px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--surface2);}
+.sinf{flex:1;min-width:0;}
+.snm{font-size:14px;font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sad{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;}
+.stags{display:flex;gap:5px;flex-wrap:wrap;}
+.tag{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;}
+.td{background:rgba(126,232,162,.15);color:var(--accent3);}
+.tr{background:rgba(247,201,72,.15);color:var(--accent);}
+.to{background:rgba(126,232,162,.15);color:var(--accent3);}
+.tc{background:rgba(255,100,80,.15);color:#ff7b7b;}
+.empty{padding:40px 20px;text-align:center;color:var(--text2);font-size:13px;}
+.empty-i{font-size:38px;margin-bottom:10px;}
+
+/* loading */
+#map-loading,#d-map-loading{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:200;}
+.spinner{width:36px;height:36px;border:3px solid var(--surface2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ═══ DETAIL SHEET ═══ */
+#detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:500;display:none;align-items:flex-end;}
+#detail-overlay.open{display:flex;}
+#detail-sheet{background:var(--surface);border-radius:22px 22px 0 0;width:100%;max-height:88vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,12px);animation:su .3s cubic-bezier(.34,1.2,.64,1);position:relative;}
+@keyframes su{from{transform:translateY(100%);}to{transform:translateY(0);}}
+#sh-knob{width:38px;height:4px;background:var(--border);border-radius:4px;margin:11px auto 0;}
+#sh-hdr{padding:14px 20px;border-bottom:1px solid var(--border);}
+#sh-name{font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;}
+#sh-addr{font-size:12px;color:var(--text2);margin-top:3px;}
+#sh-meta{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap;}
+.mb{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:4px;}
+.mb-r{background:rgba(247,201,72,.15);color:var(--accent);}
+.mb-o{background:rgba(126,232,162,.15);color:var(--accent3);}
+.mb-c{background:rgba(255,100,80,.15);color:#ff7b7b;}
+.mb-p{background:rgba(255,123,84,.15);color:var(--accent2);cursor:pointer;}
+#sh-hours{padding:11px 20px;border-bottom:1px solid var(--border);}
+#sh-hours h3{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:7px;text-transform:uppercase;letter-spacing:1px;}
+.hr{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;}
+.hr-t{color:var(--accent);font-weight:700;}
+#sh-acts{display:flex;gap:8px;padding:11px 20px;border-bottom:1px solid var(--border);}
+.ab{flex:1;padding:11px 4px;border-radius:12px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:'Noto Sans TC',sans-serif;transition:transform .15s;}
+.ab:active{transform:scale(.94);}
+.ab-n{background:var(--accent);color:#000;}
+.ab-m{background:var(--accent2);color:#fff;}
+.ab-o{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+#sh-menu{padding:11px 20px;border-bottom:1px solid var(--border);display:none;}
+#sh-menu h3{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:9px;text-transform:uppercase;letter-spacing:1px;}
+.mc{margin-bottom:10px;}
+.mc h4{color:var(--accent);font-size:12px;font-weight:700;margin-bottom:5px;}
+.mi{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border);}
+.mi:last-child{border-bottom:none;}
+.mp{color:var(--accent);font-weight:600;}
+#sh-order{padding:11px 20px;display:none;}
+#sh-order h3{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:9px;text-transform:uppercase;letter-spacing:1px;}
+#otbl{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:9px;}
+#otbl th{background:var(--surface2);padding:7px 3px;text-align:center;font-size:10px;color:var(--text2);}
+#otbl td{padding:5px 3px;border-bottom:1px solid var(--border);text-align:center;}
+.oi{width:100%;background:transparent;border:none;color:var(--text);font-size:11px;text-align:center;outline:none;font-family:'Noto Sans TC',sans-serif;}
+.oi::placeholder{color:var(--surface2);}
+select.oi{background:var(--surface2);border-radius:5px;padding:2px;cursor:pointer;}
+.osub{color:var(--accent);font-weight:600;}
+.del-r{background:none;border:none;color:#ff7b7b;cursor:pointer;font-size:14px;padding:2px 5px;}
+#ord-ft{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+#add-row{padding:7px 13px;border-radius:9px;border:1px dashed var(--border);background:none;color:var(--text2);cursor:pointer;font-size:12px;font-family:'Noto Sans TC',sans-serif;}
+#total-d{font-size:15px;font-weight:700;color:var(--accent);}
+#close-sh{position:absolute;right:13px;top:13px;width:27px;height:27px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<!-- MOBILE -->
+<div id="mobile-app">
+  <div id="map-loading"><div class="spinner"></div><p style="color:var(--text2);font-size:13px">載入地圖中…</p></div>
+  <div id="map"></div>
+  <div id="m-header">
+    <span id="m-logo">🧋 附近飲料店</span>
+    <div id="m-search-row">
+      <input id="m-si" type="text" class="m-search-input" placeholder="輸入地址搜尋…" style="flex:1;background:rgba(26,29,39,.95);border:1px solid var(--border);border-radius:11px;padding:9px 13px;color:var(--text);font-size:14px;font-family:'Noto Sans TC',sans-serif;outline:none;">
+      <button class="m-btn m-btn-s" id="m-sb">🔍</button>
+      <button class="m-btn m-btn-l" id="m-lb">📍</button>
+    </div>
+    <div id="m-radius-row">
+      <label>搜尋半徑</label>
+      <input type="range" id="m-rs" min="0.5" max="5" step="0.5" value="1.5">
+      <span id="m-rv">1.5 km</span>
+    </div>
+  </div>
+  <div id="bubble-panel" class="hidden">
+    <div id="bubble-tab">🫧</div>
+    <div id="bubble-box">
+      <div id="bubble-title">品牌分佈</div>
+      <svg id="m-bsvg" viewBox="0 0 132 220"></svg>
+    </div>
+  </div>
+  <div id="list-panel" class="hidden">
+    <div id="list-handle">
+      <span id="list-label">🧋 找到 0 間飲料店</span>
+      <div id="list-knob"></div>
+      <span id="list-chevron">▲</span>
+    </div>
+    <div id="list-scroll"></div>
+  </div>
+</div>
+
+<!-- DESKTOP -->
+<div id="desktop-app">
+  <div id="d-header">
+    <span id="d-logo">🧋 附近飲料店</span>
+    <div id="d-search-group">
+      <input id="d-si" type="text" placeholder="輸入地址或地點搜尋…">
+      <button class="d-btn d-btn-s" id="d-sb">🔍 搜尋</button>
+      <button class="d-btn d-btn-l" id="d-lb">📍 定位</button>
+    </div>
+    <div id="d-rg">
+      <label>搜尋半徑</label>
+      <input type="range" id="d-rs" min="0.5" max="5" step="0.5" value="1.5">
+      <span id="d-rv">1.5 km</span>
+    </div>
+  </div>
+  <div id="d-body">
+    <div id="d-map-wrap">
+      <div id="d-map-loading"><div class="spinner"></div><p style="color:var(--text2);font-size:13px">載入地圖中…</p></div>
+      <div id="d-map"></div>
+    </div>
+    <div id="d-sidebar">
+      <div id="d-tabs">
+        <div class="d-tab active" data-tab="list">📋 店家清單</div>
+        <div class="d-tab" data-tab="bubbles">🫧 品牌分佈</div>
+      </div>
+      <div id="d-panel-list" class="d-panel active">
+        <div id="d-list-info">找到 <strong id="d-cnt">0</strong> 間飲料店</div>
+        <div id="d-list-items"></div>
+      </div>
+      <div id="d-panel-bubbles" class="d-panel">
+        <div id="d-bwrap">
+          <h3>品牌分佈圖</h3>
+          <p>圓圈越大 = 附近分店越多</p>
+          <svg id="d-bsvg" viewBox="0 0 300 300"></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL SHEET -->
+<div id="detail-overlay">
+  <div id="detail-sheet">
+    <div id="sh-knob"></div>
+    <button id="close-sh">✕</button>
+    <div id="sh-hdr">
+      <div id="sh-name"></div>
+      <div id="sh-addr"></div>
+      <div id="sh-meta"></div>
+    </div>
+    <div id="sh-hours"><h3>營業時間</h3><div id="sh-hrs"></div></div>
+    <div id="sh-acts">
+      <button class="ab ab-n" id="btn-nav">🗺 導航</button>
+      <button class="ab ab-m" id="btn-menu">🧋 查菜單</button>
+      <button class="ab ab-o" id="btn-order">📝 點餐</button>
+    </div>
+    <div id="sh-menu">
+      <h3>最新菜單</h3>
+      <div id="sh-mc"></div>
+    </div>
+    <div id="sh-order">
+      <h3>點餐清單</h3>
+      <table id="otbl">
+        <thead><tr><th>姓名</th><th>飲品</th><th>甜度</th><th>冰量</th><th>數量</th><th>單價</th><th>小計</th><th></th></tr></thead>
+        <tbody id="otbody"></tbody>
+      </table>
+      <div id="ord-ft">
+        <button id="add-row">＋ 新增列</button>
+        <div id="total-d">總計：NT$0</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── CONFIG ── */
+const GKEY = 'AIzaSyD4mQnWzB7GgIGLgk0onr5npWwEE4W_J0E';
+const IS_MOB = window.innerWidth < 768 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+document.getElementById(IS_MOB ? 'mobile-app' : 'desktop-app').style.display = IS_MOB ? 'block' : 'flex';
+
+
+/* ── BRAND DATA ── */
+const BC = {'50嵐':'#00b4d8','春水堂':'#7ec8e3','茶湯會':'#2196f3','清心福全':'#ffc107',
+  '一芳':'#ff9800','珍煮丹':'#f44336','迷客夏':'#4caf50','鶴茶樓':'#9c27b0',
+  'CoCo':'#ff5722','大苑子':'#ff7043','翰林':'#009688','麻古':'#ffeb3b',
+  '日出茶太':'#ff6f00','天仁':'#1565c0','老虎':'#d32f2f'};
+const BE = {'50嵐':'🧊','春水堂':'🍵','茶湯會':'☕','清心':'🌻','一芳':'🍓',
+  '珍煮丹':'🔴','迷客夏':'🟢','鶴茶':'🦢','CoCo':'🟠','大苑':'🍊',
+  '翰林':'🌿','麻古':'🟡','日出':'🌅','天仁':'🔵','老虎':'🐯'};
+function bClr(n){for(const[k,v]of Object.entries(BC))if(n.includes(k))return v;return`hsl(${[...n].reduce((a,c)=>a+c.charCodeAt(0),0)%360},60%,55%)`;}
+function bEmj(n){for(const[k,v]of Object.entries(BE))if(n.includes(k))return v;return'🧋';}
+function bKey(n){for(const k of Object.keys(BC))if(n.includes(k))return k;return n.replace(/第?\d+|號|分店|店$/g,'').trim().slice(0,5);}
+
+/* ── STATE ── */
+let mMap,dMap,mSvc,dSvc,mCircle,dCircle;
+let stores=[],mMkrs=[],dMkrs=[];
+let searchCenter=null;
+let curPlace=null,menuOpen=false,orderOpen=false;
+let bubVis=false,listVis=false;
+
+function gMap(){return IS_MOB?mMap:dMap;}
+function gSvc(){return IS_MOB?mSvc:dSvc;}
+function gRad(){return parseFloat(document.getElementById(IS_MOB?'m-rs':'d-rs').value);}
+
+/* ── INIT MAP (Google callback) ── */
+function initMap(){
+  const ctr={lat:24.1477,lng:120.6536};
+  const sty=mapStyle();
+  if(IS_MOB){
+    document.getElementById('map-loading').style.display='none';
+    mMap=new google.maps.Map(document.getElementById('map'),{center:ctr,zoom:15,styles:sty,disableDefaultUI:true,gestureHandling:'greedy'});
+    mSvc=new google.maps.places.PlacesService(mMap);
+  } else {
+    document.getElementById('d-map-loading').style.display='none';
+    dMap=new google.maps.Map(document.getElementById('d-map'),{center:ctr,zoom:15,styles:sty,disableDefaultUI:true,gestureHandling:'greedy',zoomControl:true,zoomControlOptions:{position:google.maps.ControlPosition.RIGHT_BOTTOM}});
+    dSvc=new google.maps.places.PlacesService(dMap);
+  }
+  locateMe();
+}
+
+/* ── LOCATE ── */
+function locateMe(){
+  if(!navigator.geolocation){alert('瀏覽器不支援定位');return;}
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      const ll={lat:pos.coords.latitude,lng:pos.coords.longitude};
+      searchCenter=new google.maps.LatLng(ll.lat,ll.lng);
+      gMap().setCenter(searchCenter);
+      addMeMarker(searchCenter);
+      searchFrom(searchCenter);
+    },
+    err=>{
+      console.warn('Geolocation error:',err.code,err.message);
+      searchCenter=gMap().getCenter();
+      searchFrom(searchCenter);
+    },
+    {timeout:10000,enableHighAccuracy:true}
+  );
+}
+
+function addMeMarker(pos){
+  new google.maps.Marker({position:pos,map:gMap(),zIndex:999,title:'您的位置',
+    icon:{path:google.maps.SymbolPath.CIRCLE,scale:10,fillColor:'#f7c948',fillOpacity:1,strokeColor:'#fff',strokeWeight:3}});
+}
+
+/* ── HELPERS ── */
+function toLL(c){
+  if(c instanceof google.maps.LatLng) return c;
+  return new google.maps.LatLng(typeof c.lat==='function'?c.lat():c.lat, typeof c.lng==='function'?c.lng():c.lng);
+}
+
+function drawCircle(ll,r){
+  const opts={center:ll,radius:r,strokeColor:'#ff4444',strokeOpacity:.9,strokeWeight:2,fillColor:'#ff4444',fillOpacity:.07};
+  if(IS_MOB){if(mCircle)mCircle.setMap(null);mCircle=new google.maps.Circle({map:mMap,...opts});}
+  else{if(dCircle)dCircle.setMap(null);dCircle=new google.maps.Circle({map:dMap,...opts});}
+}
+
+function fitToRadius(ll,r){
+  const m=gMap();
+  m.setCenter(ll);
+  const bounds=new google.maps.LatLngBounds();
+  [0,90,180,270].forEach(h=>bounds.extend(google.maps.geometry.spherical.computeOffset(ll,r*1.25,h)));
+  m.fitBounds(bounds,{top:IS_MOB?115:20,right:20,bottom:IS_MOB?60:20,left:20});
+  // Re-apply center after fitBounds settles
+  setTimeout(()=>m.setCenter(ll),80);
+}
+
+/* ── SEARCH (Places API New) ── */
+async function searchFrom(center){
+  const ll = toLL(center);
+  searchCenter = ll;
+  const r = gRad()*1000;
+
+  drawCircle(ll,r);
+  fitToRadius(ll,r);
+
+  mMkrs.forEach(m=>m.setMap(null)); mMkrs=[];
+  dMkrs.forEach(m=>m.setMap(null)); dMkrs=[];
+  stores=[];
+
+  document.getElementById('list-label').textContent='🔍 搜尋中…';
+  document.getElementById('d-cnt').textContent='…';
+
+  try {
+    const { Place } = await google.maps.importLibrary("places");
+
+    // searchNearby 不能用 textQuery，改用 includedTypes + keyword 組合
+    const searchConfigs = [
+      { includedTypes: ['bubble_tea_shop'] },
+      { includedTypes: ['cafe'] },
+      { includedTypes: ['restaurant'], keyword: '手搖飲料' },
+      { includedTypes: ['restaurant'], keyword: '珍珠奶茶' },
+    ];
+
+    const seen = new Set();
+
+    for (const cfg of searchConfigs) {
+      try {
+        const req = {
+          fields: ['id','displayName','location','formattedAddress','rating',
+                   'userRatingCount','regularOpeningHours','businessStatus'],
+          locationRestriction: { circle: { center: ll, radius: r } },
+          maxResultCount: 20,
+        };
+        if (cfg.includedTypes) req.includedTypes = cfg.includedTypes;
+
+        const { places } = await Place.searchNearby(req);
+        console.log('[searchNearby]', JSON.stringify(cfg), places?.length ?? 0);
+
+        if (places) {
+          places.forEach(p => {
+            const name = p.displayName || '';
+            // Filter: only keep drink-related places
+            const drinkKw = ['茶','奶','飲','juice','tea','珍珠','手搖','冰','果汁','bubble','咖啡'];
+            const isDrink = drinkKw.some(k => name.toLowerCase().includes(k));
+            if (isDrink && !seen.has(p.id)) {
+              seen.add(p.id);
+              const legacy = {
+                place_id: p.id,
+                name: name,
+                vicinity: p.formattedAddress || '',
+                geometry: { location: p.location },
+                rating: p.rating,
+                user_ratings_total: p.userRatingCount,
+                opening_hours: p.regularOpeningHours
+                  ? { isOpen: () => { try { return p.regularOpeningHours.isOpen(); } catch(e){ return null; } } }
+                  : null,
+              };
+              stores.push(legacy);
+              addMkr(legacy);
+            }
+          });
+        }
+      } catch(e) { console.warn('[searchNearby config error]', cfg, e.message); }
+    }
+
+    console.log('[Total stores found]', stores.length);
+
+  } catch(e) {
+    console.error('[Places importLibrary error]', e);
+    showErr('⛔ Places API 載入失敗：' + e.message);
+  }
+
+  sortStores(ll);
+  renderList();
+  renderBubbles();
+}
+
+/* ── MARKERS ── */
+function makeBobaIcon(name){
+  const color=bClr(name);
+  const label=name.replace(/第?\d+|號|分店$/g,'').trim().slice(0,6);
+  const w=Math.max(56,label.length*9+18);
+  const svg=`<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='50'>
+    <defs><filter id='s'><feDropShadow dx='0' dy='1' stdDeviation='1.5' flood-color='rgba(0,0,0,.55)'/></filter></defs>
+    <rect x='1' y='1' width='${w-2}' height='21' rx='10' fill='${color}' filter='url(#s)'/>
+    <text x='${w/2}' y='13' text-anchor='middle' dominant-baseline='middle' font-family='Noto Sans TC,sans-serif' font-size='10' font-weight='700' fill='#fff'>${label}</text>
+    <text x='${w/2}' y='38' text-anchor='middle' dominant-baseline='middle' font-size='19'>🧋</text>
+  </svg>`;
+  return{url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(w,50),anchor:new google.maps.Point(w/2,50)};
+}
+
+function addMkr(p){
+  const m=new google.maps.Marker({position:p.geometry.location,map:gMap(),title:p.name,icon:makeBobaIcon(p.name),zIndex:10});
+  m.addListener('click',()=>openDetail(p));
+  if(IS_MOB)mMkrs.push(m); else dMkrs.push(m);
+}
+
+/* ── SORT ── */
+function sortStores(ll){
+  stores.forEach(s=>{s._d=google.maps.geometry.spherical.computeDistanceBetween(ll,s.geometry.location);});
+  stores.sort((a,b)=>a._d-b._d);
+}
+function fD(m){return m<1000?Math.round(m)+'m':(m/1000).toFixed(1)+'km';}
+
+/* ── RENDER LIST ── */
+function renderList(){
+  const n=stores.length;
+  document.getElementById('list-label').textContent=`🧋 找到 ${n} 間飲料店`;
+  document.getElementById('d-cnt').textContent=n;
+  const html=n===0
+    ?'<div class="empty"><div class="empty-i">🔍</div><p>附近找不到飲料店<br>請增加搜尋半徑或確認 API 已啟用</p></div>'
+    :stores.map((s,i)=>{
+      const io=s.opening_hours?.isOpen?.();
+      const ot=io===true?'<span class="tag to">營業中</span>':io===false?'<span class="tag tc">休息</span>':'';
+      return`<div class="si" onclick="openDetail(stores[${i}])">
+        <div class="sico">${bEmj(s.name)}</div>
+        <div class="sinf">
+          <div class="snm">${s.name}</div>
+          <div class="sad">${s.vicinity||''}</div>
+          <div class="stags">
+            ${s._d?`<span class="tag td">📍${fD(s._d)}</span>`:''}
+            ${s.rating?`<span class="tag tr">⭐${s.rating}</span>`:''}
+            ${ot}
+          </div>
+        </div></div>`;
+    }).join('');
+  document.getElementById('list-scroll').innerHTML=html;
+  document.getElementById('d-list-items').innerHTML=html;
+}
+
+/* ── RENDER BUBBLES ── */
+function renderBubbles(){
+  const bmap={};
+  stores.forEach(s=>{const k=bKey(s.name);if(!bmap[k])bmap[k]={count:0,color:bClr(s.name)};bmap[k].count++;});
+  const brands=Object.entries(bmap).map(([k,v])=>({name:k,...v})).sort((a,b)=>b.count-a.count).slice(0,22);
+
+  [{id:'m-bsvg',W:132,H:220},{id:'d-bsvg',W:300,H:300}].forEach(({id,W,H})=>{
+    const svg=document.getElementById(id);
+    svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+    svg.innerHTML='';
+    if(!brands.length) return;
+    const mx=brands[0].count;
+    const placed=[];
+    brands.forEach(b=>{
+      const r=16+(b.count/mx)*(Math.min(W,H)*.2);
+      let x,y,t=0;
+      do{x=r+4+Math.random()*(W-2*r-8);y=r+4+Math.random()*(H-2*r-8);t++;}
+      while(t<400&&placed.some(p=>Math.hypot(p.x-x,p.y-y)<p.r+r+3));
+      placed.push({x,y,r});
+      const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+      const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',r);c.setAttribute('fill',b.color);c.setAttribute('opacity','.88');
+      g.appendChild(c);
+      const fs=Math.max(8,Math.min(13,r*.38));
+      const t1=document.createElementNS('http://www.w3.org/2000/svg','text');
+      t1.setAttribute('x',x);t1.setAttribute('y',b.count>1?y-fs*.4:y+fs*.4);
+      t1.setAttribute('text-anchor','middle');t1.setAttribute('dominant-baseline','middle');
+      t1.setAttribute('fill','#fff');t1.setAttribute('font-size',fs);t1.setAttribute('font-weight','700');
+      t1.setAttribute('font-family','Noto Sans TC,sans-serif');
+      t1.textContent=b.name.slice(0,5);g.appendChild(t1);
+      if(b.count>1){
+        const t2=document.createElementNS('http://www.w3.org/2000/svg','text');
+        t2.setAttribute('x',x);t2.setAttribute('y',y+fs*1.1);
+        t2.setAttribute('text-anchor','middle');t2.setAttribute('dominant-baseline','middle');
+        t2.setAttribute('fill','rgba(255,255,255,.7)');t2.setAttribute('font-size',Math.max(7,fs*.72));
+        t2.setAttribute('font-family','Noto Sans TC,sans-serif');
+        t2.textContent=b.count+'間';g.appendChild(t2);
+      }
+      svg.appendChild(g);
+    });
+  });
+}
+
+/* ── DETAIL SHEET ── */
+function openDetail(p){
+  curPlace=p; menuOpen=false; orderOpen=false;
+  document.getElementById('sh-menu').style.display='none';
+  document.getElementById('sh-order').style.display='none';
+  gSvc().getDetails({placeId:p.place_id,fields:['name','formatted_address','formatted_phone_number','opening_hours','rating','user_ratings_total']},(d,st)=>{
+    const info=st==='OK'?d:p;
+    document.getElementById('sh-name').textContent=info.name||p.name;
+    document.getElementById('sh-addr').textContent=info.formatted_address||p.vicinity||'';
+    let meta='';
+    if(info.rating) meta+=`<span class="mb mb-r">⭐ ${info.rating} (${info.user_ratings_total||0}則)</span>`;
+    const io=info.opening_hours?.isOpen?.()??p.opening_hours?.isOpen?.();
+    if(io===true) meta+=`<span class="mb mb-o">🟢 營業中</span>`;
+    else if(io===false) meta+=`<span class="mb mb-c">🔴 休息中</span>`;
+    if(info.formatted_phone_number) meta+=`<span class="mb mb-p" onclick="window.location='tel:${info.formatted_phone_number}'">${info.formatted_phone_number}</span>`;
+    document.getElementById('sh-meta').innerHTML=meta;
+    const days=['週日','週一','週二','週三','週四','週五','週六'];
+    const today=new Date().getDay();
+    const hrs=info.opening_hours?.weekday_text;
+    document.getElementById('sh-hrs').innerHTML=hrs?.length
+      ?hrs.map((h,i)=>{const di=(i+1)%7;const t=h.replace(/^[^:]+:\s*/,'');return`<div class="hr ${di===today?'hr-t':''}">${days[di]}<span>${t}</span></div>`;}).join('')
+      :'<p style="color:var(--text2);font-size:12px">無營業時間資訊</p>';
+    document.getElementById('btn-nav').onclick=()=>window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(info.name||p.name)}&destination_place_id=${p.place_id}`,'_blank');
+  });
+  initOrder();
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+/* ── MENU ── */
+document.getElementById('btn-menu').addEventListener('click',async()=>{
+  menuOpen=!menuOpen;
+  document.getElementById('sh-menu').style.display=menuOpen?'block':'none';
+  if(!menuOpen) return;
+  const name=curPlace?.name||'';
+  const lat=searchCenter?searchCenter.lat():24.15;
+  const region=lat>24.5?'北部':lat>23.5?'中部':'南部';
+  document.getElementById('sh-mc').innerHTML=`<p style="color:var(--text2);font-size:12px">🔍 搜尋${region}菜單中…</p>`;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
+        messages:[{role:'user',content:`提供台灣飲料店「${name}」的${region}常見菜單。只回傳JSON不要其他文字：{"categories":[{"name":"分類","items":[{"name":"品項","price":"NT$XX"}]}]}`}]})});
+    const data=await res.json();
+    const txt=data.content?.[0]?.text||'';
+    const menu=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    document.getElementById('sh-mc').innerHTML=menu.categories?.map(c=>
+      `<div class="mc"><h4>${c.name}</h4>${c.items?.map(i=>`<div class="mi"><span>${i.name}</span><span class="mp">${i.price}</span></div>`).join('')}</div>`
+    ).join('')||'<p style="color:var(--text2)">無菜單資訊</p>';
+  }catch(e){
+    document.getElementById('sh-mc').innerHTML='<p style="color:var(--text2);font-size:12px">載入失敗，請稍後再試</p>';
+  }
+});
+
+/* ── ORDER ── */
+document.getElementById('btn-order').addEventListener('click',()=>{
+  orderOpen=!orderOpen;
+  document.getElementById('sh-order').style.display=orderOpen?'block':'none';
+});
+function initOrder(){
+  document.getElementById('otbody').innerHTML='';
+  for(let i=0;i<5;i++) addRow();
+  calcTotal();
+}
+function addRow(){
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><input class="oi" type="text" placeholder="姓名"></td>
+    <td><input class="oi" type="text" placeholder="飲品"></td>
+    <td><select class="oi"><option>全糖</option><option>少糖</option><option>半糖</option><option>微糖</option><option>無糖</option></select></td>
+    <td><select class="oi"><option>正常冰</option><option>少冰</option><option>微冰</option><option>去冰</option><option>熱</option></select></td>
+    <td><input class="oi qty" type="number" value="1" min="1" style="width:36px"></td>
+    <td><input class="oi prc" type="number" placeholder="0" min="0" style="width:44px"></td>
+    <td class="osub">$0</td>
+    <td><button class="del-r" onclick="this.closest('tr').remove();calcTotal()">✕</button></td>`;
+  document.getElementById('otbody').appendChild(tr);
+  tr.querySelectorAll('.qty,.prc').forEach(e=>e.addEventListener('input',calcTotal));
+}
+function calcTotal(){
+  let t=0;
+  document.querySelectorAll('#otbody tr').forEach(tr=>{
+    const q=parseFloat(tr.querySelector('.qty')?.value||0);
+    const p=parseFloat(tr.querySelector('.prc')?.value||0);
+    const s=q*p; tr.querySelector('.osub').textContent=`$${s}`; t+=s;
+  });
+  document.getElementById('total-d').textContent=`總計：NT$${t}`;
+}
+document.getElementById('add-row').addEventListener('click',()=>{addRow();calcTotal();});
+
+/* ── DESKTOP TABS ── */
+document.querySelectorAll('.d-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.d-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.d-panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('d-panel-'+tab.dataset.tab).classList.add('active');
+  });
+});
+
+/* ── SLIDERS ── */
+let debTimer=null;
+function onSlider(val,labelId){
+  document.getElementById(labelId).textContent=val+' km';
+  if(!gMap()||!searchCenter) return;
+  const r=parseFloat(val)*1000;
+  drawCircle(searchCenter,r);
+  fitToRadius(searchCenter,r);
+}
+document.getElementById('m-rs').addEventListener('input',e=>onSlider(e.target.value,'m-rv'));
+document.getElementById('m-rs').addEventListener('change',()=>{clearTimeout(debTimer);debTimer=setTimeout(()=>searchFrom(searchCenter||gMap().getCenter()),400);});
+document.getElementById('d-rs').addEventListener('input',e=>onSlider(e.target.value,'d-rv'));
+document.getElementById('d-rs').addEventListener('change',()=>{clearTimeout(debTimer);debTimer=setTimeout(()=>searchFrom(searchCenter||gMap().getCenter()),400);});
+
+/* ── ADDRESS SEARCH ── */
+function addrSearch(q){
+  if(!q.trim()) return;
+  new google.maps.Geocoder().geocode({address:q+' 台灣'},(r,s)=>{
+    if(s==='OK'&&r[0]){
+      searchCenter=r[0].geometry.location;
+      searchFrom(searchCenter);
+    } else { alert('找不到地址，請重新輸入'); }
+  });
+}
+document.getElementById('m-sb').onclick=()=>addrSearch(document.getElementById('m-si').value);
+document.getElementById('m-si').addEventListener('keypress',e=>{if(e.key==='Enter')addrSearch(e.target.value);});
+document.getElementById('d-sb').onclick=()=>addrSearch(document.getElementById('d-si').value);
+document.getElementById('d-si').addEventListener('keypress',e=>{if(e.key==='Enter')addrSearch(e.target.value);});
+document.getElementById('m-lb').onclick=locateMe;
+document.getElementById('d-lb').onclick=locateMe;
+
+/* ── BUBBLE TOGGLE ── */
+document.getElementById('bubble-tab').addEventListener('click',()=>{
+  bubVis=!bubVis;
+  document.getElementById('bubble-panel').classList.toggle('hidden',!bubVis);
+  document.getElementById('bubble-tab').textContent=bubVis?'›':'🫧';
+});
+
+/* ── LIST TOGGLE ── */
+document.getElementById('list-handle').addEventListener('click',()=>{
+  listVis=!listVis;
+  document.getElementById('list-panel').classList.toggle('hidden',!listVis);
+});
+
+/* ── SHEET CLOSE ── */
+document.getElementById('close-sh').addEventListener('click',()=>document.getElementById('detail-overlay').classList.remove('open'));
+document.getElementById('detail-overlay').addEventListener('click',e=>{if(e.target.id==='detail-overlay')document.getElementById('detail-overlay').classList.remove('open');});
+
+/* ── ERROR TOAST ── */
+function showErr(msg){
+  const el=document.createElement('div');
+  el.style.cssText='position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#c0392b;color:#fff;padding:14px 20px;border-radius:12px;font-size:13px;z-index:9999;max-width:90vw;text-align:center;font-family:Noto Sans TC,sans-serif;white-space:pre-line;box-shadow:0 4px 20px rgba(0,0,0,.4);line-height:1.5;';
+  el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),9000);
+}
+
+/* ── MAP STYLE ── */
+function mapStyle(){
+  return[
+    {elementType:'geometry',stylers:[{color:'#1a1d27'}]},
+    {elementType:'labels.text.fill',stylers:[{color:'#9a9db0'}]},
+    {elementType:'labels.text.stroke',stylers:[{color:'#0f1117'}]},
+    {featureType:'road',elementType:'geometry',stylers:[{color:'#22263a'}]},
+    {featureType:'road.arterial',elementType:'geometry',stylers:[{color:'#2a3050'}]},
+    {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#3a4070'}]},
+    {featureType:'water',elementType:'geometry',stylers:[{color:'#0f1829'}]},
+    {featureType:'poi',stylers:[{visibility:'off'}]},
+    {featureType:'transit',stylers:[{visibility:'off'}]},
+  ];
+}
+</script>
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD4mQnWzB7GgIGLgk0onr5npWwEE4W_J0E&v=weekly&libraries=places,geometry&callback=initMap&language=zh-TW&region=TW">
+</script>
+</body>
+</html>
