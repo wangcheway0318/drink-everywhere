@@ -52,11 +52,33 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .m-btn:active{transform:scale(.88);}
 .m-btn-s{background:rgba(247,201,72,.92);color:#000;}
 .m-btn-l{background:rgba(255,123,84,.92);color:#fff;}
-#m-radius-row{display:flex;align-items:center;gap:9px;background:rgba(26,29,39,.9);border-radius:10px;padding:7px 12px;border:1px solid var(--border);width:100%;}
+#m-radius-row{display:flex;align-items:center;gap:6px;background:rgba(26,29,39,.9);border-radius:10px;padding:7px 10px;border:1px solid var(--border);width:100%;}
 #m-radius-row label{font-size:11px;color:var(--text2);white-space:nowrap;}
 #m-radius-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:4px;background:var(--surface2);outline:none;}
 #m-radius-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);}
-#m-radius-val{font-size:12px;font-weight:700;color:var(--accent);min-width:38px;text-align:right;}
+#m-radius-val{font-size:12px;font-weight:700;color:var(--accent);min-width:38px;text-align:center;}
+.rad-arrow{width:26px;height:26px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.07);color:var(--text);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;}
+.rad-arrow:active{background:var(--accent);color:#000;}
+/* Desktop recenter button */
+#d-recenter-btn{
+  position:absolute;right:12px;bottom:80px;z-index:10;
+  width:42px;height:42px;border-radius:12px;border:none;cursor:pointer;
+  background:var(--surface);border:1px solid var(--border);
+  color:var(--accent);font-size:20px;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 12px rgba(0,0,0,.4);transition:transform .15s,background .15s;
+}
+#d-recenter-btn:active{transform:scale(.9);}
+#d-recenter-btn:hover{background:var(--surface2);}
+/* Mobile recenter button */
+#m-recenter-btn{
+  position:absolute;right:12px;bottom:64px;z-index:45;
+  width:44px;height:44px;border-radius:13px;border:none;cursor:pointer;
+  background:rgba(26,29,39,.92);border:1px solid var(--border);
+  color:var(--accent);font-size:22px;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 12px rgba(0,0,0,.4);transition:transform .15s;
+  backdrop-filter:blur(8px);
+}
+#m-recenter-btn:active{transform:scale(.88);}
 
 /* bubble panel */
 #bubble-panel{position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:40;transition:transform .3s ease;}
@@ -191,6 +213,7 @@ select.oi{background:var(--surface2);border-radius:5px;padding:2px;cursor:pointe
 <div id="mobile-app">
   <div id="map-loading"><div class="spinner"></div><p style="color:var(--text2);font-size:13px">載入地圖中…</p></div>
   <div id="map"></div>
+  <button id="m-recenter-btn" title="回到定位中心">🎯</button>
   <div id="m-header">
     <div id="m-top-row">
       <span id="m-logo">🧋 Drink Everywhere</span>
@@ -203,9 +226,11 @@ select.oi{background:var(--surface2);border-radius:5px;padding:2px;cursor:pointe
       <button class="m-btn m-btn-l" id="m-lb">📍</button>
     </div>
     <div id="m-radius-row">
-      <label>搜尋半徑</label>
-      <input type="range" id="m-rs" min="0.5" max="5" step="0.5" value="1.5">
-      <span id="m-rv">1.5 km</span>
+      <label>半徑</label>
+      <button class="rad-arrow" id="m-rad-dec">◀</button>
+      <input type="range" id="m-rs" min="0.5" max="5" step="0.5" value="1">
+      <button class="rad-arrow" id="m-rad-inc">▶</button>
+      <span id="m-rv">1.0 km</span>
     </div>
   </div>
   <div id="bubble-panel" class="hidden">
@@ -239,14 +264,17 @@ select.oi{background:var(--surface2);border-radius:5px;padding:2px;cursor:pointe
     </div>
     <div id="d-rg">
       <label>搜尋半徑</label>
-      <input type="range" id="d-rs" min="0.5" max="5" step="0.5" value="1.5">
-      <span id="d-rv">1.5 km</span>
+      <button class="rad-arrow" id="d-rad-dec" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.07);color:var(--text);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;">◀</button>
+      <input type="range" id="d-rs" min="0.5" max="5" step="0.5" value="1">
+      <button class="rad-arrow" id="d-rad-inc" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.07);color:var(--text);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;">▶</button>
+      <span id="d-rv">1.0 km</span>
     </div>
   </div>
   <div id="d-body">
     <div id="d-map-wrap">
       <div id="d-map-loading"><div class="spinner"></div><p style="color:var(--text2);font-size:13px">載入地圖中…</p></div>
       <div id="d-map"></div>
+      <button id="d-recenter-btn" title="回到定位中心">🎯</button>
     </div>
     <div id="d-sidebar">
       <div id="d-tabs">
@@ -365,16 +393,30 @@ function getBrandLogo(name){
   return null;
 }
 
-// Returns an <img> or emoji span for store icon
-function brandIconHtml(name, size=40){
-  const logo = getBrandLogo(name);
-  const color = bClr(name);
-  if(logo){
-    return `<img src="${logo}" alt="${name}" width="${size}" height="${size}"
-      style="border-radius:${size*0.25}px;object-fit:contain;background:#fff;padding:3px;"
-      onerror="this.outerHTML='<span style=\'font-size:${size*0.5}px\'>🧋</span>'">`;
-  }
-  return `<span style="font-size:${size*0.5}px">🧋</span>`;
+// Returns emoji for store icon in list
+function brandIconHtml(name){
+  const emojis = {
+    '50嵐':'🧊','春水堂':'🍵','茶湯會':'☕','清心':'🌻','一芳':'🍓',
+    '珍煮丹':'🔴','迷客夏':'🟢','鶴茶':'🦢','CoCo':'🟠','大苑':'🍊',
+    '翰林':'🌿','麻古':'🟡','日出':'🌅','天仁':'🔵','老虎':'🐯',
+    '貢茶':'🍃','鹿角巷':'🦌','彼可':'🫧','鮮芋仙':'🍠','迷你':'🔮',
+  };
+  for(const[k,v]of Object.entries(emojis))if(name.includes(k))return v;
+  return '🧋';
+}
+
+// Extract brand short name (strip branch info)
+function brandShortName(name){
+  // Remove branch suffixes: 大雅清泉崗店、永和福和店、etc.
+  // Keep only the brand name portion before first space/地名
+  const known = Object.keys(BC);
+  for(const k of known) if(name.includes(k)) return k;
+  // Fallback: remove common suffixes
+  return name
+    .replace(/[\s　]+(永和|中和|新莊|板橋|三重|蘆洲|新店|土城|汐止|淡水|大安|信義|松山|中山|士林|北投|內湖|南港|文山|萬華|中正|大同|中壢|桃園|新竹|苗栗|台中|彰化|南投|雲林|嘉義|台南|高雄|屏東|宜蘭|花蓮|台東|澎湖|金門|大雅|清泉崗|忠孝|民生|仁愛|和平|復興|建國|光復|敦化|瑞光|內湖|松德|文德|民族|民權|民安|中山北|天母|士東|文林|德行|社子|重慶|承德|環河|華江|西藏|長壽|萬大|中原|板新|文化|四維|永貞|竹林|得和|中正|南山|立人|廣福|保平|保生|保安|中興|永和|福和|永安|永貞|永平|中正|秀朗|秀成|秀峰).*(店|館|號)?$/u, '')
+    .replace(/(分店|旗艦店|店|館)$/, '')
+    .trim()
+    .slice(0, 6);
 }
 
 /* ── STATE ── */
@@ -484,7 +526,7 @@ function searchFrom(center){
           results.forEach(p => {
             if (!stores.find(s => s.place_id === p.place_id)) {
               stores.push(p);
-              addMkr(p);
+              // Don't add marker yet - do it after sort with distance filter
             }
           });
         } else if (status === S.REQUEST_DENIED) {
@@ -496,6 +538,12 @@ function searchFrom(center){
             showErr('⛔ API Key 被拒絕\n請至 Google Cloud Console 確認 Places API 已啟用，並檢查 API Key 的 HTTP 參照網址限制是否包含此網站網址');
           }
           sortStores(ll);
+          // Only show markers within radius*1.2 to avoid clutter
+          const displayR = r * 1.2;
+          stores.forEach(p => {
+            const dist = google.maps.geometry.spherical.computeDistanceBetween(ll, p.geometry.location);
+            if(dist <= displayR) addMkr(p);
+          });
           renderList();
           renderBubbles();
         }
@@ -505,75 +553,33 @@ function searchFrom(center){
 }
 
 /* ── MARKERS ── */
-// Cache for logo→canvas dataURL conversion
 const markerIconCache = {};
 
-function makeMarkerIcon(name, callback){
-  const cacheKey = name;
-  if(markerIconCache[cacheKey]){ callback(markerIconCache[cacheKey]); return; }
-
+function makeMarkerIcon(name){
+  if(markerIconCache[name]) return markerIconCache[name];
   const color = bClr(name);
-  const label = name.replace(/第?\d+|號|分店$/g,'').trim().slice(0,6);
-  const logoUrl = getBrandLogo(name);
-  const W = Math.max(62, label.length*9+22);
-  const H = 54;
-
-  if(logoUrl){
-    // Try to build icon with logo image using canvas
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = ()=>{
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = W; canvas.height = H;
-        const ctx = canvas.getContext('2d');
-        // label pill
-        ctx.fillStyle = color;
-        ctx.beginPath(); ctx.roundRect(1,1,W-2,22,10); ctx.fill();
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 10px Noto Sans TC,sans-serif';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(label.slice(0,7), W/2, 12);
-        // logo circle
-        const cx=W/2, cy=38, r=13;
-        ctx.save();
-        ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.clip();
-        ctx.fillStyle='#fff'; ctx.fillRect(cx-r,cy-r,r*2,r*2);
-        ctx.drawImage(img,cx-r,cy-r,r*2,r*2);
-        ctx.restore();
-        const url = canvas.toDataURL();
-        markerIconCache[cacheKey] = {url, scaledSize:new google.maps.Size(W,H), anchor:new google.maps.Point(W/2,H)};
-        callback(markerIconCache[cacheKey]);
-      } catch(e){ callback(makeSvgIcon(name, color, label, W)); }
-    };
-    img.onerror = ()=>{ callback(makeSvgIcon(name, color, label, W)); };
-    img.src = logoUrl;
-  } else {
-    callback(makeSvgIcon(name, color, label, W));
-  }
-}
-
-function makeSvgIcon(name, color, label, W){
-  const H=54;
+  const label = brandShortName(name);
+  const emoji = brandIconHtml(name);
+  const W = Math.max(56, label.length*10+20);
+  const H = 52;
   const svg=`<svg xmlns='http://www.w3.org/2000/svg' width='${W}' height='${H}'>
-    <defs><filter id='ds'><feDropShadow dx='0' dy='1' stdDeviation='2' flood-color='rgba(0,0,0,.5)'/></filter></defs>
-    <rect x='1' y='1' width='${W-2}' height='22' rx='10' fill='${color}' filter='url(#ds)'/>
+    <defs><filter id='ds${W}'><feDropShadow dx='0' dy='1' stdDeviation='2' flood-color='rgba(0,0,0,.5)'/></filter></defs>
+    <rect x='1' y='1' width='${W-2}' height='22' rx='10' fill='${color}' filter='url(#ds${W})'/>
     <text x='${W/2}' y='13' text-anchor='middle' dominant-baseline='middle' font-family='Noto Sans TC,sans-serif' font-size='10' font-weight='700' fill='#fff'>${label}</text>
-    <text x='${W/2}' y='40' text-anchor='middle' dominant-baseline='middle' font-size='20'>🧋</text>
+    <text x='${W/2}' y='39' text-anchor='middle' dominant-baseline='middle' font-size='19'>${emoji}</text>
   </svg>`;
-  const icon = {url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg), scaledSize:new google.maps.Size(W,H), anchor:new google.maps.Point(W/2,H)};
-  markerIconCache[name] = icon;
+  const icon={url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(W,H),anchor:new google.maps.Point(W/2,H)};
+  markerIconCache[name]=icon;
   return icon;
 }
 
 function addMkr(p){
-  // Create marker with boba first, then upgrade to logo asynchronously
-  const fallback = makeSvgIcon(p.name, bClr(p.name), p.name.replace(/第?\d+|號|分店$/g,'').trim().slice(0,6), Math.max(62,p.name.slice(0,6).length*9+22));
-  const m = new google.maps.Marker({position:p.geometry.location, map:gMap(), title:p.name, icon:fallback, zIndex:10});
+  const m=new google.maps.Marker({
+    position:p.geometry.location, map:gMap(), title:p.name,
+    icon:makeMarkerIcon(p.name), zIndex:10
+  });
   m.addListener('click',()=>openDetail(p));
   if(IS_MOB) mMkrs.push(m); else dMkrs.push(m);
-  // Async upgrade to logo
-  makeMarkerIcon(p.name, icon=>m.setIcon(icon));
 }
 
 /* ── SORT ── */
@@ -594,7 +600,7 @@ function renderList(){
       const io=s.opening_hours?.isOpen?.();
       const ot=io===true?'<span class="tag to">營業中</span>':io===false?'<span class="tag tc">休息</span>':'';
       return`<div class="si" onclick="openDetail(stores[${i}])">
-        <div class="sico" style="background:transparent;overflow:hidden;">${brandIconHtml(s.name,42)}</div>
+        <div class="sico">${brandIconHtml(s.name)}</div>
         <div class="sinf">
           <div class="snm">${s.name}</div>
           <div class="sad">${s.vicinity||''}</div>
@@ -858,19 +864,53 @@ document.querySelectorAll('.d-tab').forEach(tab=>{
   });
 });
 
-/* ── SLIDERS ── */
+/* ── SLIDERS + ARROW BUTTONS + RECENTER ── */
 let debTimer=null;
-function onSlider(val,labelId){
-  document.getElementById(labelId).textContent=val+' km';
+
+function setRadius(val){
+  val = Math.min(5, Math.max(0.5, Math.round(val*2)/2)); // snap to 0.5 steps
+  document.getElementById('m-rs').value = val;
+  document.getElementById('d-rs').value = val;
+  document.getElementById('m-rv').textContent = val.toFixed(1)+' km';
+  document.getElementById('d-rv').textContent = val.toFixed(1)+' km';
+  if(!gMap()||!searchCenter) return;
+  const r=val*1000;
+  drawCircle(searchCenter,r);
+  fitToRadius(searchCenter,r);
+  clearTimeout(debTimer);
+  debTimer=setTimeout(()=>searchFrom(searchCenter||gMap().getCenter()),400);
+}
+
+function onSlider(val){
+  document.getElementById('m-rv').textContent=parseFloat(val).toFixed(1)+' km';
+  document.getElementById('d-rv').textContent=parseFloat(val).toFixed(1)+' km';
+  document.getElementById('m-rs').value=val;
+  document.getElementById('d-rs').value=val;
   if(!gMap()||!searchCenter) return;
   const r=parseFloat(val)*1000;
   drawCircle(searchCenter,r);
   fitToRadius(searchCenter,r);
 }
-document.getElementById('m-rs').addEventListener('input',e=>onSlider(e.target.value,'m-rv'));
-document.getElementById('m-rs').addEventListener('change',()=>{clearTimeout(debTimer);debTimer=setTimeout(()=>searchFrom(searchCenter||gMap().getCenter()),400);});
-document.getElementById('d-rs').addEventListener('input',e=>onSlider(e.target.value,'d-rv'));
-document.getElementById('d-rs').addEventListener('change',()=>{clearTimeout(debTimer);debTimer=setTimeout(()=>searchFrom(searchCenter||gMap().getCenter()),400);});
+
+document.getElementById('m-rs').addEventListener('input',e=>{onSlider(e.target.value);});
+document.getElementById('m-rs').addEventListener('change',e=>{clearTimeout(debTimer);debTimer=setTimeout(()=>searchFrom(searchCenter||gMap().getCenter()),400);});
+document.getElementById('d-rs').addEventListener('input',e=>{onSlider(e.target.value);});
+document.getElementById('d-rs').addEventListener('change',e=>{clearTimeout(debTimer);debTimer=setTimeout(()=>searchFrom(searchCenter||gMap().getCenter()),400);});
+
+// Arrow buttons
+document.getElementById('m-rad-dec').addEventListener('click',()=>setRadius(parseFloat(document.getElementById('m-rs').value)-0.5));
+document.getElementById('m-rad-inc').addEventListener('click',()=>setRadius(parseFloat(document.getElementById('m-rs').value)+0.5));
+document.getElementById('d-rad-dec').addEventListener('click',()=>setRadius(parseFloat(document.getElementById('d-rs').value)-0.5));
+document.getElementById('d-rad-inc').addEventListener('click',()=>setRadius(parseFloat(document.getElementById('d-rs').value)+0.5));
+
+// Recenter buttons - go back to searchCenter, set radius to 1km
+function recenterMap(){
+  const c = searchCenter || gMap().getCenter();
+  setRadius(1.0);
+  setTimeout(()=>{ gMap().setCenter(c); }, 50);
+}
+document.getElementById('m-recenter-btn').addEventListener('click', recenterMap);
+document.getElementById('d-recenter-btn').addEventListener('click', recenterMap);
 
 /* ── SMART SEARCH with Places Autocomplete ── */
 let acService = null;
@@ -934,8 +974,12 @@ function setupAutocomplete(inputId, sugId){
         if(status !== google.maps.places.PlacesServiceStatus.OK || !predictions){
           sug.style.display='none'; return;
         }
-        sug.innerHTML = predictions.slice(0,5).map(p=>`
-          <div class="m-sug-item" onclick="pickSuggestion('${inputId}','${sugId}','${p.place_id}',${JSON.stringify(p.description).replace(/'/g,"&#39;")})">
+        // Store predictions safely, use index-based onclick
+        const preds = predictions.slice(0,5);
+        window._acPreds = window._acPreds || {};
+        window._acPreds[sugId] = preds;
+        sug.innerHTML = preds.map((p,i)=>`
+          <div class="m-sug-item" onclick="pickByIndex('${sugId}',${i})">
             <span class="m-sug-icon">📍</span>
             <span>${p.description}</span>
           </div>`).join('');
@@ -954,23 +998,32 @@ function setupAutocomplete(inputId, sugId){
   });
 }
 
-function pickSuggestion(inputId, sugId, placeId, description){
+function pickByIndex(sugId, idx){
+  const preds = window._acPreds && window._acPreds[sugId];
+  if(!preds || !preds[idx]) return;
+  const pred = preds[idx];
+  const description = pred.description;
+  const placeId = pred.place_id;
+
+  // Find which input is linked to this suggestion box
+  const inputId = sugId === 'm-suggestions' ? 'm-si' : 'd-si';
   document.getElementById(inputId).value = description;
   document.getElementById(sugId).style.display = 'none';
-  // Use placeId directly for precise location
-  if(placeId){
-    const svc = IS_MOB ? mSvc : dSvc;
-    svc.getDetails({placeId, fields:['geometry','name']},(result, status)=>{
-      if(status === google.maps.places.PlacesServiceStatus.OK && result){
-        searchCenter = result.geometry.location;
-        searchFrom(searchCenter);
-      } else {
-        addrSearch(description);
-      }
-    });
-  } else {
-    addrSearch(description);
-  }
+  const clr = document.getElementById('m-clear');
+  if(clr) clr.style.display = description ? 'block' : 'none';
+
+  // Use placeId for precise location
+  const svc = IS_MOB ? mSvc : dSvc;
+  svc.getDetails({placeId, fields:['geometry','name','formatted_address']},(result, status)=>{
+    if(status === google.maps.places.PlacesServiceStatus.OK && result){
+      searchCenter = result.geometry.location;
+      gMap().setCenter(searchCenter);
+      gMap().setZoom(16);
+      searchFrom(searchCenter);
+    } else {
+      addrSearch(description);
+    }
+  });
 }
 
 // Init autocomplete after map loads
