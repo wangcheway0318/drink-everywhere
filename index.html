@@ -295,10 +295,17 @@ select.oi{background:var(--surface2);border-radius:5px;padding:2px;cursor:pointe
       <table id="otbl">
         <thead><tr><th>姓名</th><th>飲品</th><th>甜度</th><th>冰量</th><th>數量</th><th>單價</th><th>小計</th><th></th></tr></thead>
         <tbody id="otbody"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="6" style="text-align:right;padding:8px 6px;font-size:12px;color:var(--text2);font-weight:700;border-top:2px solid var(--border);">合計總金額</td>
+            <td id="total-td" style="color:var(--accent);font-weight:700;font-size:13px;border-top:2px solid var(--border);text-align:center;">NT$0</td>
+            <td style="border-top:2px solid var(--border);"></td>
+          </tr>
+        </tfoot>
       </table>
       <div id="ord-ft">
         <button id="add-row">＋ 新增列</button>
-        <div id="total-d">總計：NT$0</div>
+        <div id="total-d" style="font-size:16px;font-weight:800;">總計：NT$0</div>
       </div>
     </div>
   </div>
@@ -312,16 +319,63 @@ document.getElementById(IS_MOB ? 'mobile-app' : 'desktop-app').style.display = I
 
 
 /* ── BRAND DATA ── */
-const BC = {'50嵐':'#00b4d8','春水堂':'#7ec8e3','茶湯會':'#2196f3','清心福全':'#ffc107',
+const BC = {
+  '50嵐':'#00b4d8','春水堂':'#7ec8e3','茶湯會':'#2196f3','清心福全':'#ffc107',
   '一芳':'#ff9800','珍煮丹':'#f44336','迷客夏':'#4caf50','鶴茶樓':'#9c27b0',
-  'CoCo':'#ff5722','大苑子':'#ff7043','翰林':'#009688','麻古':'#ffeb3b',
-  '日出茶太':'#ff6f00','天仁':'#1565c0','老虎':'#d32f2f'};
-const BE = {'50嵐':'🧊','春水堂':'🍵','茶湯會':'☕','清心':'🌻','一芳':'🍓',
-  '珍煮丹':'🔴','迷客夏':'🟢','鶴茶':'🦢','CoCo':'🟠','大苑':'🍊',
-  '翰林':'🌿','麻古':'🟡','日出':'🌅','天仁':'🔵','老虎':'🐯'};
-function bClr(n){for(const[k,v]of Object.entries(BC))if(n.includes(k))return v;return`hsl(${[...n].reduce((a,c)=>a+c.charCodeAt(0),0)%360},60%,55%)`;}
-function bEmj(n){for(const[k,v]of Object.entries(BE))if(n.includes(k))return v;return'🧋';}
-function bKey(n){for(const k of Object.keys(BC))if(n.includes(k))return k;return n.replace(/第?\d+|號|分店|店$/g,'').trim().slice(0,5);}
+  'CoCo都可':'#ff5722','CoCo':'#ff5722','大苑子':'#ff7043','翰林茶館':'#009688','翰林':'#009688',
+  '麻古茶坊':'#e9c46a','麻古':'#e9c46a','日出茶太':'#ff6f00','天仁茗茶':'#1565c0','天仁':'#1565c0',
+  '老虎堂':'#d32f2f','老虎':'#d32f2f','迷你':'#9b5de5','貢茶':'#2d6a4f','GONG CHA':'#2d6a4f',
+  '茶湯會':'#2196f3','彼可':'#f72585','鮮芋仙':'#7b2d8b','the alley':'#3d405b','鹿角巷':'#3d405b',
+};
+
+// Brand logo URLs (Google Favicon as reliable fallback)
+const BLOG = {
+  '50嵐':       'https://logo.clearbit.com/50lan.com.tw',
+  '春水堂':     'https://logo.clearbit.com/chunshuitang.com.tw',
+  '茶湯會':     'https://logo.clearbit.com/the-alley.com',
+  '清心福全':   'https://logo.clearbit.com/qingxin.com.tw',
+  '一芳':       'https://logo.clearbit.com/yifang.com.tw',
+  '珍煮丹':     'https://logo.clearbit.com/jendjan.com',
+  '迷客夏':     'https://logo.clearbit.com/milksha.com',
+  'CoCo':       'https://logo.clearbit.com/coco-tea.com',
+  '大苑子':     'https://logo.clearbit.com/dayunzi.com',
+  '翰林':       'https://logo.clearbit.com/hanlin-tea.com.tw',
+  '麻古':       'https://logo.clearbit.com/maqutea.com',
+  '日出茶太':   'https://logo.clearbit.com/chatime.com',
+  '天仁':       'https://logo.clearbit.com/tenren.com.tw',
+  '老虎':       'https://logo.clearbit.com/tigersugartw.com',
+  '貢茶':       'https://logo.clearbit.com/gongcha.com',
+  'GONG CHA':   'https://logo.clearbit.com/gongcha.com',
+  '鹿角巷':     'https://logo.clearbit.com/the-alley.com',
+};
+
+// Logo img cache (url -> loaded/failed)
+const logoCache = {};
+
+function bClr(n){
+  for(const[k,v]of Object.entries(BC))if(n.includes(k))return v;
+  return`hsl(${[...n].reduce((a,c)=>a+c.charCodeAt(0),0)%360},60%,55%)`;
+}
+function bKey(n){
+  for(const k of Object.keys(BC))if(n.includes(k))return k;
+  return n.replace(/第?\d+|號|分店|店$/g,'').trim().slice(0,5);
+}
+function getBrandLogo(name){
+  for(const[k,v]of Object.entries(BLOG))if(name.includes(k))return v;
+  return null;
+}
+
+// Returns an <img> or emoji span for store icon
+function brandIconHtml(name, size=40){
+  const logo = getBrandLogo(name);
+  const color = bClr(name);
+  if(logo){
+    return `<img src="${logo}" alt="${name}" width="${size}" height="${size}"
+      style="border-radius:${size*0.25}px;object-fit:contain;background:#fff;padding:3px;"
+      onerror="this.outerHTML='<span style=\'font-size:${size*0.5}px\'>🧋</span>'">`;
+  }
+  return `<span style="font-size:${size*0.5}px">🧋</span>`;
+}
 
 /* ── STATE ── */
 let mMap,dMap,mSvc,dSvc,mCircle,dCircle;
@@ -451,23 +505,75 @@ function searchFrom(center){
 }
 
 /* ── MARKERS ── */
-function makeBobaIcon(name){
-  const color=bClr(name);
-  const label=name.replace(/第?\d+|號|分店$/g,'').trim().slice(0,6);
-  const w=Math.max(56,label.length*9+18);
-  const svg=`<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='50'>
-    <defs><filter id='s'><feDropShadow dx='0' dy='1' stdDeviation='1.5' flood-color='rgba(0,0,0,.55)'/></filter></defs>
-    <rect x='1' y='1' width='${w-2}' height='21' rx='10' fill='${color}' filter='url(#s)'/>
-    <text x='${w/2}' y='13' text-anchor='middle' dominant-baseline='middle' font-family='Noto Sans TC,sans-serif' font-size='10' font-weight='700' fill='#fff'>${label}</text>
-    <text x='${w/2}' y='38' text-anchor='middle' dominant-baseline='middle' font-size='19'>🧋</text>
+// Cache for logo→canvas dataURL conversion
+const markerIconCache = {};
+
+function makeMarkerIcon(name, callback){
+  const cacheKey = name;
+  if(markerIconCache[cacheKey]){ callback(markerIconCache[cacheKey]); return; }
+
+  const color = bClr(name);
+  const label = name.replace(/第?\d+|號|分店$/g,'').trim().slice(0,6);
+  const logoUrl = getBrandLogo(name);
+  const W = Math.max(62, label.length*9+22);
+  const H = 54;
+
+  if(logoUrl){
+    // Try to build icon with logo image using canvas
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = ()=>{
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = W; canvas.height = H;
+        const ctx = canvas.getContext('2d');
+        // label pill
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.roundRect(1,1,W-2,22,10); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 10px Noto Sans TC,sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(label.slice(0,7), W/2, 12);
+        // logo circle
+        const cx=W/2, cy=38, r=13;
+        ctx.save();
+        ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.clip();
+        ctx.fillStyle='#fff'; ctx.fillRect(cx-r,cy-r,r*2,r*2);
+        ctx.drawImage(img,cx-r,cy-r,r*2,r*2);
+        ctx.restore();
+        const url = canvas.toDataURL();
+        markerIconCache[cacheKey] = {url, scaledSize:new google.maps.Size(W,H), anchor:new google.maps.Point(W/2,H)};
+        callback(markerIconCache[cacheKey]);
+      } catch(e){ callback(makeSvgIcon(name, color, label, W)); }
+    };
+    img.onerror = ()=>{ callback(makeSvgIcon(name, color, label, W)); };
+    img.src = logoUrl;
+  } else {
+    callback(makeSvgIcon(name, color, label, W));
+  }
+}
+
+function makeSvgIcon(name, color, label, W){
+  const H=54;
+  const svg=`<svg xmlns='http://www.w3.org/2000/svg' width='${W}' height='${H}'>
+    <defs><filter id='ds'><feDropShadow dx='0' dy='1' stdDeviation='2' flood-color='rgba(0,0,0,.5)'/></filter></defs>
+    <rect x='1' y='1' width='${W-2}' height='22' rx='10' fill='${color}' filter='url(#ds)'/>
+    <text x='${W/2}' y='13' text-anchor='middle' dominant-baseline='middle' font-family='Noto Sans TC,sans-serif' font-size='10' font-weight='700' fill='#fff'>${label}</text>
+    <text x='${W/2}' y='40' text-anchor='middle' dominant-baseline='middle' font-size='20'>🧋</text>
   </svg>`;
-  return{url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(w,50),anchor:new google.maps.Point(w/2,50)};
+  const icon = {url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg), scaledSize:new google.maps.Size(W,H), anchor:new google.maps.Point(W/2,H)};
+  markerIconCache[name] = icon;
+  return icon;
 }
 
 function addMkr(p){
-  const m=new google.maps.Marker({position:p.geometry.location,map:gMap(),title:p.name,icon:makeBobaIcon(p.name),zIndex:10});
+  // Create marker with boba first, then upgrade to logo asynchronously
+  const fallback = makeSvgIcon(p.name, bClr(p.name), p.name.replace(/第?\d+|號|分店$/g,'').trim().slice(0,6), Math.max(62,p.name.slice(0,6).length*9+22));
+  const m = new google.maps.Marker({position:p.geometry.location, map:gMap(), title:p.name, icon:fallback, zIndex:10});
   m.addListener('click',()=>openDetail(p));
-  if(IS_MOB)mMkrs.push(m); else dMkrs.push(m);
+  if(IS_MOB) mMkrs.push(m); else dMkrs.push(m);
+  // Async upgrade to logo
+  makeMarkerIcon(p.name, icon=>m.setIcon(icon));
 }
 
 /* ── SORT ── */
@@ -488,7 +594,7 @@ function renderList(){
       const io=s.opening_hours?.isOpen?.();
       const ot=io===true?'<span class="tag to">營業中</span>':io===false?'<span class="tag tc">休息</span>':'';
       return`<div class="si" onclick="openDetail(stores[${i}])">
-        <div class="sico">${bEmj(s.name)}</div>
+        <div class="sico" style="background:transparent;overflow:hidden;">${brandIconHtml(s.name,42)}</div>
         <div class="sinf">
           <div class="snm">${s.name}</div>
           <div class="sad">${s.vicinity||''}</div>
@@ -736,7 +842,9 @@ function calcTotal(){
     const p=parseFloat(tr.querySelector('.prc')?.value||0);
     const s=q*p; tr.querySelector('.osub').textContent=`$${s}`; t+=s;
   });
-  document.getElementById('total-d').textContent=`總計：NT$${t}`;
+  document.getElementById('total-d').textContent=`總計：NT$${t.toLocaleString()}`;
+  const td=document.getElementById('total-td');
+  if(td) td.textContent=`NT$${t.toLocaleString()}`;
 }
 document.getElementById('add-row').addEventListener('click',()=>{addRow();calcTotal();});
 
@@ -827,7 +935,7 @@ function setupAutocomplete(inputId, sugId){
           sug.style.display='none'; return;
         }
         sug.innerHTML = predictions.slice(0,5).map(p=>`
-          <div class="m-sug-item" onclick="pickSuggestion('${inputId}','${sugId}',${JSON.stringify(p.description).replace(/'/g,"&#39;")})">
+          <div class="m-sug-item" onclick="pickSuggestion('${inputId}','${sugId}','${p.place_id}',${JSON.stringify(p.description).replace(/'/g,"&#39;")})">
             <span class="m-sug-icon">📍</span>
             <span>${p.description}</span>
           </div>`).join('');
@@ -846,10 +954,23 @@ function setupAutocomplete(inputId, sugId){
   });
 }
 
-function pickSuggestion(inputId, sugId, description){
+function pickSuggestion(inputId, sugId, placeId, description){
   document.getElementById(inputId).value = description;
   document.getElementById(sugId).style.display = 'none';
-  addrSearch(description);
+  // Use placeId directly for precise location
+  if(placeId){
+    const svc = IS_MOB ? mSvc : dSvc;
+    svc.getDetails({placeId, fields:['geometry','name']},(result, status)=>{
+      if(status === google.maps.places.PlacesServiceStatus.OK && result){
+        searchCenter = result.geometry.location;
+        searchFrom(searchCenter);
+      } else {
+        addrSearch(description);
+      }
+    });
+  } else {
+    addrSearch(description);
+  }
 }
 
 // Init autocomplete after map loads
