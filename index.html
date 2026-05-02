@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🧋 Drink Everywhere</title>
+<title>🧋 スゲ喝 | SUGE DRINK</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -216,7 +216,10 @@ select.oi{background:var(--surface2);border-radius:5px;padding:2px;cursor:pointe
   <button id="m-recenter-btn" title="回到定位中心">🎯</button>
   <div id="m-header">
     <div id="m-top-row">
-      <span id="m-logo">🧋 Drink Everywhere</span>
+      <span id="m-logo">
+  <span style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--accent);">🧋 スゲ喝</span>
+  <span style="font-family:sans-serif;font-size:9px;font-weight:600;color:var(--text2);letter-spacing:2px;display:block;margin-top:-2px;margin-left:2px;">SUGE DRINK</span>
+</span>
       <div id="m-search-wrap">
         <input id="m-si" type="text" placeholder="搜尋地址、地點名稱…" autocomplete="off">
         <button id="m-clear">✕</button>
@@ -253,7 +256,10 @@ select.oi{background:var(--surface2);border-radius:5px;padding:2px;cursor:pointe
 <!-- DESKTOP -->
 <div id="desktop-app">
   <div id="d-header">
-    <span id="d-logo">🧋 Drink Everywhere</span>
+    <span id="d-logo" style="display:flex;flex-direction:column;line-height:1.1;">
+  <span style="font-family:'Outfit',sans-serif;font-size:21px;font-weight:800;color:var(--accent);">🧋 スゲ喝</span>
+  <span style="font-family:sans-serif;font-size:10px;font-weight:600;color:var(--text2);letter-spacing:3px;margin-left:2px;">SUGE DRINK</span>
+</span>
     <div id="d-search-group">
       <div style="position:relative;flex:1;">
         <input id="d-si" type="text" placeholder="搜尋地址、地點名稱、店名…" autocomplete="off" style="width:100%;">
@@ -511,7 +517,7 @@ function searchFrom(center){
   document.getElementById('d-cnt').textContent='…';
 
   const svc = gSvc();
-  const kwds = ['手搖飲料', '珍珠奶茶', 'bubble tea', '飲料店', '茶飲'];
+  const kwds = ['飲料店'];
   let done = 0;
   let anyDenied = false;
 
