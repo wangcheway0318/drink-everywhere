@@ -477,39 +477,116 @@ function renderList(){
 function renderBubbles(){
   const bmap={};
   stores.forEach(s=>{const k=bKey(s.name);if(!bmap[k])bmap[k]={count:0,color:bClr(s.name)};bmap[k].count++;});
-  const brands=Object.entries(bmap).map(([k,v])=>({name:k,...v})).sort((a,b)=>b.count-a.count).slice(0,22);
+  const brands=Object.entries(bmap).map(([k,v])=>({name:k,...v})).sort((a,b)=>b.count-a.count).slice(0,20);
 
   [{id:'m-bsvg',W:132,H:220},{id:'d-bsvg',W:300,H:300}].forEach(({id,W,H})=>{
     const svg=document.getElementById(id);
-    svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
     svg.innerHTML='';
-    if(!brands.length) return;
+    if(!brands.length){svg.setAttribute('viewBox',`0 0 ${W} ${H}`);return;}
+
     const mx=brands[0].count;
+    const PAD=4;
+
+    // Step1: calculate radius for each brand
+    const nodes=brands.map(b=>({
+      ...b,
+      r: Math.round(14+(b.count/mx)*(Math.min(W,H)*.18)),
+      x:0, y:0
+    }));
+
+    // Step2: deterministic spiral placement — guarantees no overlap
+    function overlaps(nx,ny,nr,placed){
+      return placed.some(p=>Math.hypot(p.x-nx,p.y-ny)<p.r+nr+PAD);
+    }
+    function tryPlace(nr, placed){
+      // Try spiral outward from centre
+      const cx=W/2, cy=H/2;
+      const maxR=Math.max(W,H);
+      for(let dist=0;dist<maxR;dist+=2){
+        const steps=Math.max(1,Math.round(2*Math.PI*dist/3));
+        for(let i=0;i<steps;i++){
+          const angle=(2*Math.PI*i/steps);
+          const nx=cx+dist*Math.cos(angle);
+          const ny=cy+dist*Math.sin(angle);
+          if(nx-nr<PAD||nx+nr>W-PAD||ny-nr<PAD||ny+nr>H-PAD) continue;
+          if(!overlaps(nx,ny,nr,placed)) return {x:nx,y:ny};
+        }
+      }
+      return null; // fallback: couldn't place
+    }
+
     const placed=[];
-    brands.forEach(b=>{
-      const r=16+(b.count/mx)*(Math.min(W,H)*.2);
-      let x,y,t=0;
-      do{x=r+4+Math.random()*(W-2*r-8);y=r+4+Math.random()*(H-2*r-8);t++;}
-      while(t<400&&placed.some(p=>Math.hypot(p.x-x,p.y-y)<p.r+r+3));
-      placed.push({x,y,r});
+    nodes.forEach(n=>{
+      const pos=tryPlace(n.r,placed);
+      if(pos){n.x=pos.x;n.y=pos.y;placed.push(n);}
+    });
+
+    // Step3: compute actual bounding box and scale to fit SVG
+    if(!placed.length){svg.setAttribute('viewBox',`0 0 ${W} ${H}`);return;}
+    const minX=Math.min(...placed.map(p=>p.x-p.r));
+    const maxX=Math.max(...placed.map(p=>p.x+p.r));
+    const minY=Math.min(...placed.map(p=>p.y-p.r));
+    const maxY=Math.max(...placed.map(p=>p.y+p.r));
+    const vw=maxX-minX+PAD*2, vh=maxY-minY+PAD*2;
+    svg.setAttribute('viewBox',`${minX-PAD} ${minY-PAD} ${vw} ${vh}`);
+    svg.style.width='100%';
+    svg.style.height='auto';
+    svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+
+    // Step4: draw
+    placed.forEach(b=>{
+      const {x,y,r,color,name,count}=b;
       const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+
+      // Shadow
+      const shadow=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      shadow.setAttribute('cx',x+2);shadow.setAttribute('cy',y+3);shadow.setAttribute('r',r);
+      shadow.setAttribute('fill','rgba(0,0,0,0.25)');
+      g.appendChild(shadow);
+
+      // Circle
       const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
-      c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',r);c.setAttribute('fill',b.color);c.setAttribute('opacity','.88');
+      c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',r);
+      c.setAttribute('fill',color);c.setAttribute('opacity','.92');
       g.appendChild(c);
-      const fs=Math.max(8,Math.min(13,r*.38));
+
+      // Inner highlight ring
+      const ring=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      ring.setAttribute('cx',x);ring.setAttribute('cy',y);ring.setAttribute('r',r-2);
+      ring.setAttribute('fill','none');ring.setAttribute('stroke','rgba(255,255,255,0.2)');ring.setAttribute('stroke-width','1.5');
+      g.appendChild(ring);
+
+      const fs=Math.max(9,Math.min(15,r*0.40));
+      const hasCount=count>1;
+      const nameY=hasCount ? y-fs*0.55 : y+fs*0.1;
+
+      // Brand name
       const t1=document.createElementNS('http://www.w3.org/2000/svg','text');
-      t1.setAttribute('x',x);t1.setAttribute('y',b.count>1?y-fs*.4:y+fs*.4);
+      t1.setAttribute('x',x);t1.setAttribute('y',nameY);
       t1.setAttribute('text-anchor','middle');t1.setAttribute('dominant-baseline','middle');
       t1.setAttribute('fill','#fff');t1.setAttribute('font-size',fs);t1.setAttribute('font-weight','700');
       t1.setAttribute('font-family','Noto Sans TC,sans-serif');
-      t1.textContent=b.name.slice(0,5);g.appendChild(t1);
-      if(b.count>1){
+      t1.setAttribute('letter-spacing','0.5');
+      t1.textContent=name.slice(0,5);
+      g.appendChild(t1);
+
+      // Count badge
+      if(hasCount){
+        const badgeY=y+fs*0.85;
+        const bw=count.toString().length*fs*0.5+18;
+        const badge=document.createElementNS('http://www.w3.org/2000/svg','rect');
+        badge.setAttribute('x',x-bw/2);badge.setAttribute('y',badgeY-fs*0.5);
+        badge.setAttribute('width',bw);badge.setAttribute('height',fs*1);
+        badge.setAttribute('rx',fs*0.5);badge.setAttribute('fill','rgba(0,0,0,0.35)');
+        g.appendChild(badge);
+
         const t2=document.createElementNS('http://www.w3.org/2000/svg','text');
-        t2.setAttribute('x',x);t2.setAttribute('y',y+fs*1.1);
+        t2.setAttribute('x',x);t2.setAttribute('y',badgeY);
         t2.setAttribute('text-anchor','middle');t2.setAttribute('dominant-baseline','middle');
-        t2.setAttribute('fill','rgba(255,255,255,.7)');t2.setAttribute('font-size',Math.max(7,fs*.72));
-        t2.setAttribute('font-family','Noto Sans TC,sans-serif');
-        t2.textContent=b.count+'間';g.appendChild(t2);
+        t2.setAttribute('fill','rgba(255,255,255,0.95)');t2.setAttribute('font-size',Math.max(8,fs*0.7));
+        t2.setAttribute('font-family','Noto Sans TC,sans-serif');t2.setAttribute('font-weight','600');
+        t2.textContent=count+'間';
+        g.appendChild(t2);
       }
       svg.appendChild(g);
     });
