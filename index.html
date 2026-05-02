@@ -61,7 +61,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .rad-arrow:active{background:var(--accent);color:#000;}
 /* Desktop recenter button */
 #d-recenter-btn{
-  position:absolute;right:12px;bottom:80px;z-index:10;
+  position:absolute;left:12px;bottom:24px;z-index:10;
   width:42px;height:42px;border-radius:12px;border:none;cursor:pointer;
   background:var(--surface);border:1px solid var(--border);
   color:var(--accent);font-size:20px;display:flex;align-items:center;justify-content:center;
@@ -875,8 +875,9 @@ function setRadius(val){
   document.getElementById('d-rv').textContent = val.toFixed(1)+' km';
   if(!gMap()||!searchCenter) return;
   const r=val*1000;
+  // Only redraw circle, keep current map zoom level
   drawCircle(searchCenter,r);
-  fitToRadius(searchCenter,r);
+  gMap().setCenter(searchCenter);
   clearTimeout(debTimer);
   debTimer=setTimeout(()=>searchFrom(searchCenter||gMap().getCenter()),400);
 }
@@ -888,8 +889,9 @@ function onSlider(val){
   document.getElementById('d-rs').value=val;
   if(!gMap()||!searchCenter) return;
   const r=parseFloat(val)*1000;
+  // Only redraw circle, do NOT zoom the map
   drawCircle(searchCenter,r);
-  fitToRadius(searchCenter,r);
+  gMap().setCenter(searchCenter); // keep center pinned, no zoom change
 }
 
 document.getElementById('m-rs').addEventListener('input',e=>{onSlider(e.target.value);});
@@ -906,8 +908,17 @@ document.getElementById('d-rad-inc').addEventListener('click',()=>setRadius(pars
 // Recenter buttons - go back to searchCenter, set radius to 1km
 function recenterMap(){
   const c = searchCenter || gMap().getCenter();
-  setRadius(1.0);
-  setTimeout(()=>{ gMap().setCenter(c); }, 50);
+  // Update radius to 1km
+  const val = 1.0;
+  document.getElementById('m-rs').value = val;
+  document.getElementById('d-rs').value = val;
+  document.getElementById('m-rv').textContent = val.toFixed(1)+' km';
+  document.getElementById('d-rv').textContent = val.toFixed(1)+' km';
+  // Recenter pressed: DO fit zoom so user sees the circle properly
+  drawCircle(c, val*1000);
+  fitToRadius(c, val*1000);
+  clearTimeout(debTimer);
+  debTimer=setTimeout(()=>searchFrom(c),400);
 }
 document.getElementById('m-recenter-btn').addEventListener('click', recenterMap);
 document.getElementById('d-recenter-btn').addEventListener('click', recenterMap);
