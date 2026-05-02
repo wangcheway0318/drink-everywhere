@@ -130,23 +130,25 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .mb-o{background:rgba(126,232,162,.15);color:var(--accent3);}
 .mb-c{background:rgba(255,100,80,.15);color:#ff7b7b;}
 .mb-p{background:rgba(255,123,84,.15);color:var(--accent2);cursor:pointer;}
-#sh-hours{padding:11px 20px;border-bottom:1px solid var(--border);}
-#sh-hours h3{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:7px;text-transform:uppercase;letter-spacing:1px;}
+/* ── detail layout ── */
+#sh-body{display:flex;gap:0;border-bottom:1px solid var(--border);}
+#sh-hours{padding:14px 20px;flex:1;min-width:0;border-right:1px solid var(--border);}
+#sh-hours h3{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;}
 .hr{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;}
 .hr-t{color:var(--accent);font-weight:700;}
+#sh-menu-panel{padding:14px 16px;flex:1;min-width:0;}
+#sh-menu-panel h3{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;}
+#sh-menu-imgs{display:flex;flex-direction:column;gap:8px;}
+#sh-menu-imgs img{width:100%;border-radius:10px;object-fit:cover;max-height:140px;background:var(--surface2);}
+.menu-img-label{font-size:11px;color:var(--text2);text-align:center;margin-top:2px;}
 #sh-acts{display:flex;gap:8px;padding:11px 20px;border-bottom:1px solid var(--border);}
-.ab{flex:1;padding:11px 4px;border-radius:12px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:'Noto Sans TC',sans-serif;transition:transform .15s;}
+.ab{flex:1;padding:12px 4px;border-radius:12px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Noto Sans TC',sans-serif;transition:transform .15s;}
 .ab:active{transform:scale(.94);}
 .ab-n{background:var(--accent);color:#000;}
-.ab-m{background:var(--accent2);color:#fff;}
 .ab-o{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
-#sh-menu{padding:11px 20px;border-bottom:1px solid var(--border);display:none;}
-#sh-menu h3{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:9px;text-transform:uppercase;letter-spacing:1px;}
-.mc{margin-bottom:10px;}
-.mc h4{color:var(--accent);font-size:12px;font-weight:700;margin-bottom:5px;}
-.mi{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border);}
-.mi:last-child{border-bottom:none;}
-.mp{color:var(--accent);font-weight:600;}
+/* legacy - keep for mobile */
+.ab-m{background:var(--accent2);color:#fff;}
+#sh-menu{display:none;}
 #sh-order{padding:11px 20px;display:none;}
 #sh-order h3{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:9px;text-transform:uppercase;letter-spacing:1px;}
 #otbl{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:9px;}
@@ -251,16 +253,18 @@ select.oi{background:var(--surface2);border-radius:5px;padding:2px;cursor:pointe
       <div id="sh-addr"></div>
       <div id="sh-meta"></div>
     </div>
-    <div id="sh-hours"><h3>營業時間</h3><div id="sh-hrs"></div></div>
+    <div id="sh-body">
+      <div id="sh-hours"><h3>🕐 營業時間</h3><div id="sh-hrs"></div></div>
+      <div id="sh-menu-panel">
+        <h3>🧋 菜單照片</h3>
+        <div id="sh-menu-imgs"><p style="color:var(--text2);font-size:12px">點選店家後自動載入…</p></div>
+      </div>
+    </div>
     <div id="sh-acts">
       <button class="ab ab-n" id="btn-nav">🗺 導航</button>
-      <button class="ab ab-m" id="btn-menu">🧋 查菜單</button>
       <button class="ab ab-o" id="btn-order">📝 點餐</button>
     </div>
-    <div id="sh-menu">
-      <h3>最新菜單</h3>
-      <div id="sh-mc"></div>
-    </div>
+    <div id="sh-menu" style="display:none"></div>
     <div id="sh-order">
       <h3>點餐清單</h3>
       <table id="otbl">
@@ -618,32 +622,63 @@ function openDetail(p){
     document.getElementById('btn-nav').onclick=()=>window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(info.name||p.name)}&destination_place_id=${p.place_id}`,'_blank');
   });
   initOrder();
+  loadMenuImages(p.name);
   document.getElementById('detail-overlay').classList.add('open');
 }
 
-/* ── MENU ── */
-document.getElementById('btn-menu').addEventListener('click',async()=>{
-  menuOpen=!menuOpen;
-  document.getElementById('sh-menu').style.display=menuOpen?'block':'none';
-  if(!menuOpen) return;
-  const name=curPlace?.name||'';
-  const lat=searchCenter?searchCenter.lat():24.15;
-  const region=lat>24.5?'北部':lat>23.5?'中部':'南部';
-  document.getElementById('sh-mc').innerHTML=`<p style="color:var(--text2);font-size:12px">🔍 搜尋${region}菜單中…</p>`;
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
-        messages:[{role:'user',content:`提供台灣飲料店「${name}」的${region}常見菜單。只回傳JSON不要其他文字：{"categories":[{"name":"分類","items":[{"name":"品項","price":"NT$XX"}]}]}`}]})});
-    const data=await res.json();
-    const txt=data.content?.[0]?.text||'';
-    const menu=JSON.parse(txt.replace(/```json|```/g,'').trim());
-    document.getElementById('sh-mc').innerHTML=menu.categories?.map(c=>
-      `<div class="mc"><h4>${c.name}</h4>${c.items?.map(i=>`<div class="mi"><span>${i.name}</span><span class="mp">${i.price}</span></div>`).join('')}</div>`
-    ).join('')||'<p style="color:var(--text2)">無菜單資訊</p>';
-  }catch(e){
-    document.getElementById('sh-mc').innerHTML='<p style="color:var(--text2);font-size:12px">載入失敗，請稍後再試</p>';
-  }
-});
+/* ── MENU IMAGES (auto-load on openDetail) ── */
+async function loadMenuImages(name){
+  const box = document.getElementById('sh-menu-imgs');
+  box.innerHTML = '<p style="color:var(--text2);font-size:12px">🔍 搜尋菜單圖片中…</p>';
+
+  // Use Anthropic API to get top 3 most likely menu image search URLs via Google Images redirect
+  try {
+    const query = encodeURIComponent(name + ' 菜單 menu 2024');
+    // Build 3 Google image search links as fallback display
+    const searches = [
+      { label: name + ' 菜單', q: name + ' 菜單 menu' },
+      { label: name + ' 飲料 menu', q: name + ' 飲品 menu 點餐' },
+    ];
+
+    // Try to fetch images via Anthropic AI with web_search
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:600,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        messages:[{role:'user',content:`搜尋台灣飲料店「${name}」的菜單圖片網址，回傳最多3張直接可用的圖片URL（.jpg/.png/.webp結尾）。只回傳JSON：{"images":[{"url":"圖片直接網址","caption":"說明"}]}`}]
+      })
+    });
+    const data = await res.json();
+    const txt = (data.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('');
+    const clean = txt.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    const imgs = parsed.images?.filter(i=>i.url&&/https?:\/\/.+\.(jpg|jpeg|png|webp)/i.test(i.url));
+
+    if(imgs && imgs.length > 0){
+      box.innerHTML = imgs.map(i=>
+        `<div>
+          <img src="${i.url}" alt="${i.caption||name+'菜單'}" 
+            onerror="this.parentElement.style.display='none'"
+            loading="lazy">
+          <div class="menu-img-label">${i.caption||''}</div>
+        </div>`
+      ).join('');
+      return;
+    }
+  } catch(e){ console.warn('Menu image AI error:', e); }
+
+  // Fallback: show Google search link
+  const q = encodeURIComponent(name + ' 菜單 menu');
+  box.innerHTML = `
+    <div style="text-align:center;padding:12px 0;">
+      <p style="color:var(--text2);font-size:12px;margin-bottom:12px">自動載入失敗，請點下方搜尋</p>
+      <a href="https://www.google.com/search?q=${q}&tbm=isch" target="_blank"
+        style="background:var(--accent);color:#000;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;text-decoration:none;display:inline-block">
+        🔍 Google 搜尋「${name}菜單」
+      </a>
+    </div>`;
+}
 
 /* ── ORDER ── */
 document.getElementById('btn-order').addEventListener('click',()=>{
